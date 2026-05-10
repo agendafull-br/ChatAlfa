@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgendaFull - Chat de Atendimento</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --roxo-escuro: #4A0E78;
+            --roxo-medio: #6B21A8;
+            --roxo-claro: #8B5CF6;
+            --roxo-bg: #F5F0FF;
+            --branco: #FFFFFF;
+            --cinza-claro: #F3F4F6;
+            --cinza-medio: #9CA3AF;
+            --texto-escuro: #1F2937;
+            --sombra: 0 10px 40px rgba(107, 33, 168, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .welcome-screen {
+            background: var(--branco);
+            border-radius: 30px;
+            padding: 50px 30px;
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: var(--sombra);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-screen::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: var(--roxo-claro);
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--roxo-medio);
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo span {
+            color: var(--roxo-claro);
+        }
+
+        .subtitle {
+            color: var(--cinza-medio);
+            margin-bottom: 40px;
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-btn {
+            padding: 20px;
+            border: none;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .contact-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .whatsapp-btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        }
+
+        .chat-btn {
+            background: linear-gradient(135deg, var(--roxo-medio) 0%, var(--roxo-claro) 100%);
+        }
+
+        .contact-btn i {
+            font-size: 28px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--cinza-medio);
+            font-size: 13px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #E5E7EB;
+        }
+
+        .chat-container {
+            background: var(--branco);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            height: 650px;
+            display: none;
+            flex-direction: column;
+            box-shadow: var(--sombra);
+            overflow: hidden;
+        }
+
+        .chat-container.active {
+            display: flex;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--roxo-medio), var(--roxo-claro));
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .chat-avatar {
+            width: 45px;
+            height: 45px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .chat-header-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .chat-header-info p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #F9FAFB;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.support {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.support .message-bubble {
+            background: white;
+            color: var(--texto-escuro);
+            border: 1px solid #E5E7EB;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, var(--roxo-medio), var(--roxo-claro));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--cinza-medio);
+            margin-top: 4px;
+            padding: 0 8px;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background: white;
+            border: 1px solid #E5E7EB;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cinza-medio);
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input-area input:focus {
+            border-color: var(--roxo-claro);
+        }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--roxo-medio), var(--roxo-claro));
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(107, 33, 168, 0.3);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .system-message {
+            text-align: center;
+            font-size: 12px;
+            color: var(--cinza-medio);
+            padding: 10px;
+        }
+
+        .admin-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--roxo-escuro);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-btn:hover {
+            background: var(--roxo-medio);
+            transform: translateY(-2px);
+        }
+
+        .admin-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .admin-modal.active {
+            display: flex;
+        }
+
+        .admin-panel {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: var(--roxo-escuro);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h2 {
+            font-size: 18px;
+        }
+
+        .close-admin {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #F9FAFB;
+        }
+
+        .conversation-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversation-item:hover {
+            border-color: var(--roxo-claro);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .conversation-item.active-chat {
+            border-color: var(--roxo-medio);
+            background: var(--roxo-bg);
+        }
+
+        .conv-info h4 {
+            font-size: 14px;
+            color: var(--texto-escuro);
+            margin-bottom: 4px;
+        }
+
+        .conv-info p {
+            font-size: 12px;
+            color: var(--cinza-medio);
+        }
+
+        .conv-badge {
+            background: var(--roxo-medio);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .admin-chat-area {
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #F9FAFB;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .admin-input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            display: flex;
+            gap: 10px;
+        }
+
+        .admin-input-area input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #E5E7EB;
+            border-radius: 25px;
+            outline: none;
+        }
+
+        .admin-input-area input:focus {
+            border-color: var(--roxo-claro);
+        }
+
+        .auto-responses-section {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .auto-responses-section h3 {
+            margin-bottom: 15px;
+            color: var(--texto-escuro);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .auto-response-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .auto-response-item input {
+            padding: 10px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .auto-response-item input:first-child {
+            flex: 1;
+        }
+
+        .auto-response-item input:last-child {
+            flex: 2;
+        }
+
+        .auto-response-item input:focus {
+            border-color: var(--roxo-claro);
+        }
+
+        .delete-response-btn {
+            background: #EF4444;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .add-response-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--roxo-bg);
+            color: var(--roxo-medio);
+            border: 2px dashed var(--roxo-claro);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .add-response-btn:hover {
+            background: var(--roxo-claro);
+            color: white;
+        }
+
+        .save-config-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--roxo-medio);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .save-config-btn:hover {
+            background: var(--roxo-escuro);
+        }
+
+        .admin-password-area {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .admin-password-area input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            outline: none;
+        }
+
+        .admin-password-area input:focus {
+            border-color: var(--roxo-claro);
+        }
+
+        .admin-password-area button {
+            padding: 15px 40px;
+            background: var(--roxo-medio);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: #EF4444;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .welcome-screen {
+                padding: 30px 20px;
+            }
+            .logo {
+                font-size: 32px;
+            }
+            .contact-btn {
+                font-size: 16px;
+                padding: 16px;
+            }
+            .admin-panel {
+                max-height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE ESCOLHA -->
+    <div id="welcomeScreen" class="welcome-screen">
+        <div class="logo">Agenda<span>Pro</span></div>
+        <p class="subtitle">Escolha como prefere falar conosco</p>
+        <div class="contact-options">
+            <a href="https://wa.me/5511919698999" target="_blank" class="contact-btn whatsapp-btn">
+                💬 WhatsApp
+            </a>
+            <div class="divider">ou</div>
+            <button onclick="openChat()" class="contact-btn chat-btn">
+                💜 ChatAlfa
+            </button>
+        </div>
+    </div>
+
+    <!-- CHAT DO CLIENTE -->
+    <div id="chatContainer" class="chat-container">
+        <div class="chat-header">
+            <button class="back-btn" onclick="goBack()">←</button>
+            <div class="chat-avatar">💜</div>
+            <div class="chat-header-info">
+                <h3>AgendaPro</h3>
+                <p>Online • Responde em até 5 min</p>
+            </div>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="system-message">💜 Conversa iniciada</div>
+        </div>
+        <div id="typingIndicator" class="typing-indicator">
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="messageInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <!-- BOTÃO ADMIN -->
+    <button class="admin-btn" onclick="openAdminModal()">
+        ⚙️ Admin
+    </button>
+
+    <!-- MODAL ADMIN -->
+    <div id="adminModal" class="admin-modal">
+        <div class="admin-panel">
+            <div id="adminLogin" class="admin-password-area">
+                <h2>🔐 Acesso Admin</h2>
+                <input type="password" id="adminPasswordInput" placeholder="Digite a senha admin">
+                <button onclick="adminLogin()">Entrar</button>
+                <div id="adminLoginError" class="error-message">Senha incorreta</div>
+            </div>
+            <div id="adminContent" style="display:none; flex-direction:column; flex:1;">
+                <div class="admin-header">
+                    <h2>💼 Painel Admin</h2>
+                    <button class="close-admin" onclick="closeAdminModal()">✕</button>
+                </div>
+                <div class="conversations-list" id="conversationsList">
+                    <p style="text-align:center; color:#9CA3AF;">Nenhuma conversa ativa</p>
+                </div>
+                <div class="auto-responses-section">
+                    <h3>🤖 Respostas Automáticas</h3>
+                    <div id="autoResponsesList"></div>
+                    <button class="add-response-btn" onclick="addAutoResponse()">+ Nova Resposta</button>
+                    <button class="save-config-btn" onclick="saveAutoResponses()">💾 Salvar Configuração</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURAÇÃO ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPj6duxzX2JJAxEMe9zbHevp8ZvncN1MQ",
+  authDomain: "chatalfa-93c94.firebaseapp.com",
+  projectId: "chatalfa-93c94",
+  storageBucket: "chatalfa-93c94.firebasestorage.app",
+  messagingSenderId: "485022411344",
+  appId: "1:485022411344:web:3e5baf445cffc7a6e17f55"
+        };
+
+        const ADMIN_PASSWORD = 'admin123'; // ⚠️ ALTERE ESTA SENHA!
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ==================== VARIÁVEIS GLOBAIS ====================
+        let currentUserId = null;
+        let currentConversationId = null;
+        let isAdminLogged = false;
+        let selectedAdminChat = null;
+        let unsubscribeChat = null;
+        let unsubscribeAdmin = null;
+        
+        let autoResponses = [
+            { keywords: ['olá', 'oi', 'ola', 'oie', 'bom dia', 'boa tarde', 'boa noite'], response: 'Olá! 👋 Bem-vindo ao AgendaPro! Como posso ajudar você hoje?' },
+            { keywords: ['preço', 'preco', 'valor', 'planos', 'quanto custa', 'valores'], response: '📊 Nossos planos:\n\n💈 Barbearia Basic: R$29,90/mês\n💈 Barbearia Premium: R$49,90/mês\n💇 Salão Basic: R$29,90/mês\n💇 Salão Premium: R$49,90/mês\n\n✨ 7 dias grátis sem cartão!' },
+            { keywords: ['horário', 'horario', 'horas', 'funcionamento'], response: '🕐 Nosso suporte funciona:\n\nSeg-Sáb: 8h às 20h\nDomingo: 9h às 13h\n\nO sistema de agendamento funciona 24h!' },
+            { keywords: ['whatsapp', 'zap', 'telefone', 'contato', 'número', 'numero'], response: '📱 Também atendemos pelo WhatsApp!\n\n👉 (11) 91969-8999\n\nFique à vontade para chamar!' },
+            { keywords: ['teste', 'grátis', 'gratis', 'experimentar', 'demonstração'], response: '🎉 Temos 7 dias de teste GRÁTIS!\n\nSem precisar de cartão de crédito. Acesse nosso site e experimente!' },
+            { keywords: ['site', 'sistema', 'agendamento', 'agenda'], response: '💻 Nosso sistema de agendamento inclui:\n\n✅ Agendamento online 24h\n✅ Gestão de clientes\n✅ Controle financeiro\n✅ Painel administrativo\n✅ Notificações automáticas' }
+        ];
+
+        // ==================== INICIALIZAÇÃO ====================
+        function init() {
+            const savedResponses = localStorage.getItem('agendafull_auto_responses');
+            if (savedResponses) {
+                try { autoResponses = JSON.parse(savedResponses); } catch (e) {}
+            }
+            
+            const savedId = localStorage.getItem('agendaFull_user_id');
+            if (savedId) {
+                currentUserId = savedId;
+            } else {
+                currentUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('agendafull_user_id', currentUserId);
+            }
+            
+            console.log('💜 AgendaFull ChatAlfa iniciado!');
+            console.log('🔑 Senha admin padrão:', ADMIN_PASSWORD);
+        }
+
+        // ==================== CHAT CLIENTE ====================
+        function openChat() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('chatContainer').classList.add('active');
+            currentConversationId = currentUserId;
+            
+            db.collection('chats').doc(currentConversationId).get().then(doc => {
+                if (!doc.exists) {
+                    sendAutomatedMessage("Olá! 👋 Bem-vindo ao ChatAlfa da AgendaFull!\n\nComo posso ajudar você hoje?\n\n💡 Dica: Também atendemos pelo WhatsApp (11) 91969-8999");
+                }
+            }).catch(() => {});
+            
+            loadMessages();
+        }
+
+        function goBack() {
+            if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+            document.getElementById('chatContainer').classList.remove('active');
+            document.getElementById('welcomeScreen').style.display = 'block';
+            document.getElementById('chatMessages').innerHTML = '<div class="system-message">💜 Conversa iniciada</div>';
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message || !currentConversationId) return;
+            
+            db.collection('chats').doc(currentConversationId).collection('messages').add({
+                text: message,
+                sender: 'user',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentUserId,
+                userName: 'Cliente'
+            }).then(() => {
+                return db.collection('chats').doc(currentConversationId).set({
+                    lastMessage: message,
+                    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                    userName: 'Cliente',
+                    unread: true
+                }, { merge: true });
+            }).catch(err => console.error('Erro:', err));
+            
+            input.value = '';
+            setTimeout(() => checkAutoResponse(message), 1000);
+        }
+
+        function checkAutoResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            for (const autoResp of autoResponses) {
+                if (autoResp.keywords.some(k => lowerMessage.includes(k.toLowerCase()))) {
+                    showTypingIndicator();
+                    setTimeout(() => {
+                        hideTypingIndicator();
+                        sendAutomatedMessage(autoResp.response);
+                    }, 2000 + Math.random() * 2000);
+                    return;
+                }
+            }
+        }
+
+        function sendAutomatedMessage(text) {
+            db.collection('chats').doc(currentConversationId).collection('messages').add({
+                text: text,
+                sender: 'support',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: 'admin',
+                userName: 'AgendaPro'
+            }).then(() => {
+                return db.collection('chats').doc(currentConversationId).set({
+                    lastMessage: text,
+                    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                    unread: false
+                }, { merge: true });
+            }).catch(() => {});
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator')?.classList.add('active');
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator')?.classList.remove('active');
+        }
+
+        function loadMessages() {
+            if (unsubscribeChat) unsubscribeChat();
+            
+            unsubscribeChat = db.collection('chats').doc(currentConversationId)
+                .collection('messages').orderBy('timestamp')
+                .onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') displayMessage(change.doc.data());
+                    });
+                });
+        }
+
+        function displayMessage(message) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            
+            const div = document.createElement('div');
+            div.className = 'message ' + (message.sender === 'user' ? 'user' : 'support');
+            
+            let time = '';
+            if (message.timestamp) {
+                try { time = new Date(message.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } catch(e) {}
+            }
+            
+            div.innerHTML = `
+                <div class="message-bubble">${escapeHtml(message.text).replace(/\n/g, '<br>')}</div>
+                <div class="message-time">${message.sender === 'support' ? 'AgendaFull • ' : ''}${time}</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // ==================== ADMIN ====================
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.add('active');
+            document.getElementById('adminLoginError').style.display = 'none';
+            if (isAdminLogged) showAdminPanel();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.remove('active');
+            if (unsubscribeAdmin) { unsubscribeAdmin(); unsubscribeAdmin = null; }
+            closeAdminChat();
+        }
+
+        function adminLogin() {
+            if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD) {
+                isAdminLogged = true;
+                showAdminPanel();
+            } else {
+                document.getElementById('adminLoginError').style.display = 'block';
+            }
+        }
+
+        function showAdminPanel() {
+            document.getElementById('adminLogin').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'flex';
+            loadConversations();
+            loadAutoResponsesList();
+        }
+
+        function loadConversations() {
+            const list = document.getElementById('conversationsList');
+            if (!list) return;
+            if (unsubscribeAdmin) unsubscribeAdmin();
+            
+            list.innerHTML = '<p style="text-align:center;padding:20px;">Carregando...</p>';
+            
+            unsubscribeAdmin = db.collection('chats').orderBy('lastUpdate', 'desc').limit(50)
+                .onSnapshot(snapshot => {
+                    list.innerHTML = '';
+                    if (snapshot.empty) {
+                        list.innerHTML = '<p style="text-align:center;color:#9CA3AF;padding:20px;">Nenhuma conversa</p>';
+                        return;
+                    }
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const div = document.createElement('div');
+                        div.className = 'conversation-item' + (selectedAdminChat === doc.id ? ' active-chat' : '');
+                        div.onclick = () => openAdminChat(doc.id);
+                        div.innerHTML = `
+                            <div class="conv-info">
+                                <h4>${data.userName || 'Cliente'}</h4>
+                                <p>${(data.lastMessage || '').substring(0, 40)}...</p>
+                            </div>
+                            <div>
+                                ${data.unread ? '<span class="conv-badge">Nova</span>' : ''}
+                                <button onclick="event.stopPropagation();deleteConversation('${doc.id}')" style="background:#EF4444;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;margin-top:5px;font-size:12px;">🗑️</button>
+                            </div>
+                        `;
+                        list.appendChild(div);
+                    });
+                });
+        }
+
+        function openAdminChat(chatId) {
+            selectedAdminChat = chatId;
+            document.getElementById('conversationsList').style.display = 'none';
+            document.getElementById('adminChatArea')?.remove();
+            
+            const area = document.createElement('div');
+            area.className = 'admin-chat-area';
+            area.id = 'adminChatArea';
+            area.innerHTML = `
+                <div class="admin-header">
+                    <button onclick="closeAdminChat()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 15px;border-radius:20px;cursor:pointer;">← Voltar</button>
+                    <h3>Chat</h3>
+                </div>
+                <div id="adminMessages" class="admin-chat-messages"></div>
+                <div class="admin-input-area">
+                    <input type="text" id="adminMessageInput" placeholder="Responder..." onkeypress="if(event.key==='Enter')sendAdminMessage()">
+                    <button class="send-btn" onclick="sendAdminMessage()">➤</button>
+                </div>
+            `;
+            document.getElementById('adminContent').appendChild(area);
+            db.collection('chats').doc(chatId).update({ unread: false }).catch(() => {});
+            loadAdminChatMessages(chatId);
+        }
+
+        function closeAdminChat() {
+            selectedAdminChat = null;
+            document.getElementById('adminChatArea')?.remove();
+            document.getElementById('conversationsList').style.display = 'flex';
+        }
+
+        function loadAdminChatMessages(chatId) {
+            const container = document.getElementById('adminMessages');
+            if (!container) return;
+            container.innerHTML = '<p style="text-align:center;padding:20px;">Carregando...</p>';
+            
+            db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp')
+                .onSnapshot(snapshot => {
+                    container.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const msg = doc.data();
+                        const div = document.createElement('div');
+                        div.className = 'message ' + (msg.sender === 'user' ? 'user' : 'support');
+                        let time = '';
+                        if (msg.timestamp) {
+                            try { time = new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } catch(e) {}
+                        }
+                        div.innerHTML = `
+                            <div class="message-bubble">${escapeHtml(msg.text).replace(/\n/g, '<br>')}</div>
+                            <div class="message-time">${msg.userName || 'Sistema'} • ${time}</div>
+                        `;
+                        container.appendChild(div);
+                    });
+                    container.scrollTop = container.scrollHeight;
+                });
+        }
+
+        function sendAdminMessage() {
+            const input = document.getElementById('adminMessageInput');
+            if (!input || !selectedAdminChat) return;
+            const message = input.value.trim();
+            if (!message) return;
+            
+            db.collection('chats').doc(selectedAdminChat).collection('messages').add({
+                text: message,
+                sender: 'support',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: 'admin',
+                userName: 'AgendaFull'
+            }).then(() => {
+                return db.collection('chats').doc(selectedAdminChat).set({
+                    lastMessage: message,
+                    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                    unread: false
+                }, { merge: true });
+            }).catch(() => {});
+            input.value = '';
+        }
+
+        function deleteConversation(chatId) {
+            if (!confirm('Excluir conversa?')) return;
+            db.collection('chats').doc(chatId).collection('messages').get().then(snapshot => {
+                const batch = db.batch();
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                return batch.commit();
+            }).then(() => db.collection('chats').doc(chatId).delete())
+            .then(() => { if (selectedAdminChat === chatId) closeAdminChat(); })
+            .catch(() => {});
+        }
+
+        // ==================== RESPOSTAS AUTOMÁTICAS ====================
+        function loadAutoResponsesList() {
+            const list = document.getElementById('autoResponsesList');
+            if (!list) return;
+            list.innerHTML = '';
+            autoResponses.forEach((resp, i) => {
+                const div = document.createElement('div');
+                div.className = 'auto-response-item';
+                div.innerHTML = `
+                    <input type="text" value="${escapeHtml(resp.keywords.join(', '))}" onchange="updateAutoResponseKeyword(${i}, this.value)" placeholder="Palavras-chave">
+                    <input type="text" value="${escapeHtml(resp.response)}" onchange="updateAutoResponseText(${i}, this.value)" placeholder="Resposta">
+                    <button class="delete-response-btn" onclick="deleteAutoResponse(${i})">✕</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function updateAutoResponseKeyword(index, value) {
+            autoResponses[index].keywords = value.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+        }
+
+        function updateAutoResponseText(index, value) {
+            autoResponses[index].response = value;
+        }
+
+        function addAutoResponse() {
+            autoResponses.push({ keywords: ['palavra-chave'], response: 'Nova resposta' });
+            loadAutoResponsesList();
+        }
+
+        function deleteAutoResponse(index) {
+            if (confirm('Remover?')) { autoResponses.splice(index, 1); loadAutoResponsesList(); }
+        }
+
+        function saveAutoResponses() {
+            localStorage.setItem('agendafull_auto_responses', JSON.stringify(autoResponses));
+            alert('✅ Salvo com sucesso!');
+        }
+
+        // ==================== INICIAR ====================
+        init();
+    </script>
+</body>
+</html>
