@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AgendaFull - Chat de Atendimento</title>
+    
+    <style>
+        :root {
+            --roxo-escuro: #4A0E78;
+            --roxo-medio: #6B21A8;
+            --roxo-claro: #8B5CF6;
+            --roxo-bg: #F5F0FF;
+            --branco: #FFFFFF;
+            --cinza-claro: #F3F4F6;
+            --cinza-medio: #9CA3AF;
+            --texto-escuro: #1F2937;
+            --sombra: 0 10px 40px rgba(107, 33, 168, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .welcome-screen {
+            background: var(--branco);
+            border-radius: 30px;
+            padding: 50px 30px;
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: var(--sombra);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-screen::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: var(--roxo-claro);
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .logo { font-size: 42px; font-weight: 800; color: var(--roxo-medio); margin-bottom: 10px; position: relative; z-index: 1; }
+        .logo span { color: var(--roxo-claro); }
+        .subtitle { color: var(--cinza-medio); margin-bottom: 40px; font-size: 14px; position: relative; z-index: 1; }
+
+        .contact-btn {
+            padding: 20px;
+            border: none;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--roxo-medio) 0%, var(--roxo-claro) 100%);
+            width: 100%;
+        }
+        .contact-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .contact-btn:active { transform: translateY(-1px); }
+
+        .chat-container {
+            background: var(--branco);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            height: 650px;
+            display: none;
+            flex-direction: column;
+            box-shadow: var(--sombra);
+            overflow: hidden;
+        }
+        .chat-container.active { display: flex; }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--roxo-medio), var(--roxo-claro));
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+
+        .chat-avatar {
+            width: 45px;
+            height: 45px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .chat-header-info h3 { font-size: 16px; font-weight: 600; }
+        .chat-header-info p { font-size: 12px; opacity: 0.9; }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #F9FAFB;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message { display: flex; flex-direction: column; max-width: 80%; animation: fadeInUp 0.3s ease; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.support { align-self: flex-start; }
+        .message.user { align-self: flex-end; }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.support .message-bubble {
+            background: white;
+            color: var(--texto-escuro);
+            border: 1px solid #E5E7EB;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, var(--roxo-medio), var(--roxo-claro));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-time { font-size: 11px; color: var(--cinza-medio); margin-top: 4px; padding: 0 8px; }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background: white;
+            border: 1px solid #E5E7EB;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+        .typing-indicator.active { display: block; }
+
+        .typing-dots { display: flex; gap: 4px; }
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cinza-medio);
+            animation: typing 1.4s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .chat-input-area { padding: 15px; background: white; border-top: 1px solid #E5E7EB; display: flex; gap: 10px; }
+        .chat-input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .chat-input-area input:focus { border-color: var(--roxo-claro); }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--roxo-medio), var(--roxo-claro));
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(107, 33, 168, 0.3); }
+        .send-btn:active { transform: scale(0.95); }
+
+        .system-message { text-align: center; font-size: 12px; color: var(--cinza-medio); padding: 10px; }
+
+        @media (max-width: 480px) {
+            .welcome-screen { padding: 30px 20px; }
+            .logo { font-size: 32px; }
+            .contact-btn { font-size: 16px; padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcomeScreen" class="welcome-screen">
+        <div class="logo">Agenda<span>Full</span></div>
+        <p class="subtitle">Atendimento rápido e inteligente</p>
+        <button onclick="openChat()" class="contact-btn">💜 Iniciar ChatAlfa</button>
+    </div>
+
+    <div id="chatContainer" class="chat-container">
+        <div class="chat-header">
+            <button class="back-btn" onclick="goBack()">←</button>
+            <div class="chat-avatar">💜</div>
+            <div class="chat-header-info">
+                <h3>AgendaFull</h3>
+                <p>Online • Respostas automáticas</p>
+            </div>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="system-message">💜 Conversa iniciada</div>
+        </div>
+        <div id="typingIndicator" class="typing-indicator">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="messageInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const RESPOSTAS_AUTOMATICAS = [
+            // ==================== SAUDAÇÕES ====================
+            {
+                palavrasChave: ['olá', 'oi', 'ola', 'oie', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'salve', 'opa', 'tudo bem', 'como vai'],
+                resposta: 'Olá! 👋 Bem-vindo à AgendaFull!\n\nSomos especialistas em sistemas de agendamento para barbearias e salões de beleza.\n\nComo posso ajudar você hoje?\n\n💈 Barbearias\n💇 Salões de beleza\n💰 Planos e preços\n🎁 Códigos promocionais\n📱 Suporte'
+            },
+            {
+                palavrasChave: ['boa noite', 'boa madrugada', 'tarde da noite'],
+                resposta: 'Boa noite! 🌙\n\nMesmo tarde, estou aqui para ajudar!\n\nSe preferir, nosso WhatsApp (11) 91969-8999 retorna amanhã bem cedo.\n\nMas pode deixar sua dúvida aqui que já vou respondendo! 💜'
+            },
+            {
+                palavrasChave: ['preço', 'preco', 'valor', 'planos', 'quanto custa', 'valores', 'custo', 'tabela', 'preços', 'precos'],
+                resposta: '📊 Nossos planos AgendaFull:\n\n💈 BARBEARIAS:\n• Basic: R$29,90/mês (Inst. R$39,90)\n• Premium: R$49,90/mês (Inst. GRÁTIS)\n\n💇 SALÕES:\n• Basic: R$29,90/mês (Inst. R$39,90)\n• Premium: R$49,90/mês (Inst. GRÁTIS)\n\n📅 PLANO ANUAL (15% OFF + 1 mês grátis):\n• Basic: R$305/ano (~R$25,40/mês)\n• Premium: R$509/ano (~R$42,40/mês)\n\n✨ 7 dias grátis sem cartão!'
+            },
+            {
+                palavrasChave: ['plano mensal', 'mensalidade', 'mês', 'mensal'],
+                resposta: '📅 Planos Mensais AgendaFull:\n\n💈 Barbearia Basic: R$29,90/mês + Inst. R$39,90\n💈 Barbearia Premium: R$49,90/mês + Inst. GRÁTIS\n\n💇 Salão Basic: R$29,90/mês + Inst. R$39,90\n💇 Salão Premium: R$49,90/mês + Inst. GRÁTIS\n\n✨ 7 dias de teste grátis sem precisar de cartão!\n\nQuer fechar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['plano anual', 'anual', 'ano', 'anualidade', 'economia anual'],
+                resposta: '📅 Planos Anuais (15% OFF + 1 mês grátis):\n\n💈 Barbearia Basic: R$305/ano (~R$25,40/mês)\n💈 Barbearia Premium: R$509/ano (~R$42,40/mês)\n\n💇 Salão Basic: R$305/ano (~R$25,40/mês)\n💇 Salão Premium: R$509/ano (~R$42,40/mês)\n\n💰 Economia real comparado ao mensal!\n✨ 7 dias grátis + suporte completo.\n\nQuer fechar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['parcelamento', 'parcela', 'parcelar', 'dividir', 'cartão', 'cartao'],
+                resposta: '💳 Parcelamento:\n\n✅ Parcelamos em até 12x no cartão de crédito\n✅ Pagamento único no PIX ou Boleto\n✅ Plano anual com 15% de desconto\n\nAceitamos:\n• Visa, Mastercard, Elo, American Express\n• PIX (aprovação na hora)\n• Boleto bancário\n\n📱 Quer parcelar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['barbearia', 'barbeiro', 'barba', 'cabelo masculino', 'barbearia basic', 'barbearia premium'],
+                resposta: '💈 Sistemas para Barbearia:\n\n🔹 BARBEARIA BASIC (R$29,90/mês):\n✅ Agendamento online 24h\n✅ 1 barbeiro\n✅ Painel admin\n✅ Controle de horários\n✅ Login de clientes\n✅ Design responsivo\n✅ Firebase integrado\n✅ Suporte WhatsApp\n✅ Teste 7 dias grátis\n\n🔹 BARBEARIA PREMIUM (R$49,90/mês):\n✅ Tudo do Basic\n✅ Múltiplos barbeiros\n✅ Notificações em tempo real\n✅ Som personalizado\n✅ Relatórios\n✅ Logo e identidade\n✅ Suporte prioritário\n✅ Instalação GRÁTIS\n\nQuer fechar? Chame no WhatsApp!'
+            },
+            {
+                palavrasChave: ['barbearia basic', 'basic barbearia', 'plano básico barbearia'],
+                resposta: '💈 Barbearia Basic - R$29,90/mês:\n\n✅ Agendamento online 24h\n✅ 1 barbeiro\n✅ Painel admin completo\n✅ Controle de horários\n✅ Login de clientes\n✅ Design responsivo\n✅ Firebase integrado\n✅ Suporte WhatsApp\n✅ Teste 7 dias grátis\n\n📱 Instalação: R$39,90\n📅 Anual: R$305 (15% OFF + 1 mês grátis)\n\nQuer fechar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['barbearia premium', 'premium barbearia', 'plano premium barbearia'],
+                resposta: '💈 Barbearia Premium - R$49,90/mês:\n\n✅ Tudo do Basic incluso\n✅ Múltiplos barbeiros\n✅ Notificações em tempo real\n✅ Som personalizado\n✅ Relatórios detalhados\n✅ Personalização de cores\n✅ Logo e identidade visual\n✅ Suporte prioritário\n✅ Teste 7 dias grátis\n\n🎁 Instalação GRÁTIS!\n📅 Anual: R$509 (15% OFF + 1 mês grátis)\n\nQuer fechar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['barbearia lotada', 'muito cliente', 'muito movimento', 'agenda cheia', 'não dou conta'],
+                resposta: '🚀 Sua barbearia bombando e você se perdendo nos agendamentos?\n\nO AgendaFull Premium resolve isso:\n\n✅ Múltiplos barbeiros na mesma agenda\n✅ Clientes agendam sozinhos 24h\n✅ Notificações em tempo real\n✅ Controle total de horários\n✅ Relatórios de faturamento\n\n📊 Organize o caos e lucre mais!\n📱 Chame: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['salão', 'salao', 'salão de beleza', 'salao de beleza', 'cabeleireiro', 'cabeleireira', 'beauty'],
+                resposta: '💇 Sistemas para Salão de Beleza:\n\n🔹 SALÃO BASIC (R$29,90/mês):\n✅ Agendamento para salão\n✅ 1 profissional\n✅ Painel admin\n✅ Controle de agenda\n✅ Cadastro de clientes\n✅ Interface elegante\n✅ Hospedagem gratuita\n✅ Suporte WhatsApp\n✅ Teste 7 dias grátis\n\n🔹 SALÃO PREMIUM (R$49,90/mês):\n✅ Tudo do Basic\n✅ Múltiplos profissionais\n✅ Notificações inteligentes\n✅ Alertas sonoros\n✅ Relatórios detalhados\n✅ Logo do salão\n✅ Suporte prioritário\n✅ Instalação GRÁTIS\n\nQuer fechar? Chame no WhatsApp!'
+            },
+            {
+                palavrasChave: ['salão basic', 'salao basic', 'basic salão', 'plano básico salão'],
+                resposta: '💇 Salão Basic - R$29,90/mês:\n\n✅ Agendamento para salão\n✅ 1 profissional\n✅ Painel admin\n✅ Controle de agenda\n✅ Cadastro de clientes\n✅ Interface elegante\n✅ Hospedagem gratuita\n✅ Suporte WhatsApp\n✅ Teste 7 dias grátis\n\n📱 Instalação: R$39,90\n📅 Anual: R$305 (15% OFF + 1 mês grátis)\n\nQuer fechar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['salão premium', 'salao premium', 'premium salão', 'plano premium salão'],
+                resposta: '💇 Salão Premium - R$49,90/mês:\n\n✅ Tudo do Basic incluso\n✅ Múltiplos profissionais\n✅ Notificações inteligentes\n✅ Alertas sonoros\n✅ Relatórios detalhados\n✅ Cores personalizadas\n✅ Logo do salão\n✅ Suporte prioritário\n✅ Teste 7 dias grátis\n\n🎁 Instalação GRÁTIS!\n📅 Anual: R$509 (15% OFF + 1 mês grátis)\n\nQuer fechar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['manicure', 'unha', 'nail', 'esmalteria', 'designer de unha'],
+                resposta: '💅 Perfeito para manicures e nail designers!\n\nO AgendaFull atende perfeitamente profissionais de unha:\n\n✅ Agendamento online para clientes\n✅ Controle de horários\n✅ Cadastro de clientes com preferências\n✅ Lembretes automáticos\n✅ Profissional e elegante\n\n💇 Planos Salão a partir de R$29,90/mês\n✨ 7 dias grátis!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['esteticista', 'estética', 'estetica', 'depilação', 'depilacao', 'massagem', 'spa'],
+                resposta: '💆 Ideal para esteticistas e spas!\n\nAgendaFull para estética:\n\n✅ Agendamento de procedimentos\n✅ Controle de salas e equipamentos\n✅ Ficha completa do cliente\n✅ Histórico de atendimentos\n✅ Lembretes de retorno\n✅ Profissional e confiável\n\n💇 Planos a partir de R$29,90/mês\n✨ Teste 7 dias grátis!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['teste', 'grátis', 'gratis', 'experimentar', 'demonstração', 'demo', 'trial', 'teste grátis', '7 dias'],
+                resposta: '🎉 7 DIAS DE TESTE GRÁTIS!\n\n✨ Sem precisar de cartão de crédito\n✨ Acesso completo ao sistema\n✨ Suporte durante o teste\n✨ Sem compromisso\n\nExperimente qualquer plano:\n💈 Barbearia Basic/Premium\n💇 Salão Basic/Premium\n\n📱 Chame no WhatsApp para ativar seu teste: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['sem cartão', 'sem cartao', 'não tenho cartão', 'nao tenho cartao', 'teste sem cartão'],
+                resposta: '✅ Isso mesmo! Teste GRÁTIS sem cartão de crédito!\n\n🎉 7 dias completos\n🔓 Acesso total ao sistema\n🚫 Zero burocracia\n🚫 Não precisa cadastrar cartão\n\nÉ só chamar no WhatsApp e ativar:\n📱 (11) 91969-8999\n\nSimples assim! 💜'
+            },
+            {
+                palavrasChave: ['instalação', 'instalacao', 'instalar', 'instala', 'configurar', 'configuração', 'setup', 'implantação'],
+                resposta: '🔧 Instalação AgendaFull:\n\n📱 Planos Basic (Barbearia/Salão):\nTaxa única de R$39,90\n\n🎁 Planos Premium (Barbearia/Salão):\nInstalação GRÁTIS!\n\n⏱️ Prazo: Entrega em até 24h\n✅ Inclui: Configuração completa, personalização básica e orientações\n\nQuer instalar? Chame no WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['como instala', 'como configurar', 'como funciona a instalação', 'vocês instalam'],
+                resposta: '🔧 Nós instalamos tudo para você!\n\n✅ Você compra, nós configuramos\n✅ Entrega em até 24 horas\n✅ Enviamos acesso ao painel\n✅ Damos orientação completa\n✅ Suporte contínuo\n\nVocê não precisa fazer nada técnico!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['funcionalidades', 'recursos', 'funções', 'funcoes', 'o que faz', 'como funciona', 'features'],
+                resposta: '⚙️ Funcionalidades AgendaFull:\n\n✅ Agendamento online 24h\n✅ Painel administrativo\n✅ Controle de horários\n✅ Cadastro de clientes\n✅ Login individual\n✅ Design responsivo (mobile)\n✅ Notificações (Premium)\n✅ Relatórios (Premium)\n✅ Múltiplos profissionais (Premium)\n✅ Personalização de cores (Premium)\n✅ Som personalizado (Premium)\n✅ Hospedagem gratuita\n✅ Firebase integrado\n✅ Suporte via WhatsApp\n\n📱 Quer saber mais? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['agendamento', 'agenda', 'agendar', 'reserva', 'marcar', 'horário', 'horario'],
+                resposta: '📅 Sistema de Agendamento AgendaFull:\n\n✅ Agendamento online 24 horas\n✅ Clientes agendam sozinhos\n✅ Controle total de horários\n✅ Bloqueio de horários\n✅ Histórico de agendamentos\n✅ Confirmação automática\n✅ Notificações em tempo real (Premium)\n\nSeu negócio organizado 24h por dia!\n\n📱 Quer testar? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['painel', 'admin', 'administrativo', 'dashboard', 'gestão', 'controle'],
+                resposta: '🖥️ Painel Admin AgendaFull:\n\n✅ Dashboard intuitivo\n✅ Visão geral dos agendamentos\n✅ Gestão de clientes\n✅ Controle financeiro\n✅ Relatórios detalhados (Premium)\n✅ Configurações personalizadas\n✅ Acesso de qualquer dispositivo\n✅ Interface elegante e moderna\n\nTudo que você precisa para gerenciar seu negócio!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['app', 'aplicativo', 'celular', 'mobile', 'iphone', 'android', 'telefone'],
+                resposta: '📱 100% Responsivo (Mobile First)!\n\n✅ Funciona no celular, tablet e PC\n✅ Não precisa instalar app\n✅ Abre direto no navegador\n✅ Interface adaptada para touch\n✅ Rápido e leve\n\nSeus clientes agendam de qualquer lugar!\n\n📱 Teste: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['relatório', 'relatorio', 'faturamento', 'ganhos', 'financeiro', 'controle financeiro'],
+                resposta: '📊 Relatórios (Premium):\n\n✅ Faturamento diário/semanal/mensal\n✅ Serviços mais vendidos\n✅ Clientes mais frequentes\n✅ Horários de pico\n✅ Taxa de ocupação\n✅ Exportação de dados\n\nTome decisões baseadas em dados reais!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['lembrete', 'notificação', 'notificacao', 'alerta', 'aviso', 'lembrar'],
+                resposta: '🔔 Notificações Inteligentes:\n\n✅ Lembrete automático para clientes\n✅ Alerta de novo agendamento\n✅ Notificação de cancelamento\n✅ Aviso de horário próximo\n✅ Som personalizado (Premium)\n\nNunca mais perca um cliente por esquecimento!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['suporte', 'ajuda', 'socorro', 'problema', 'erro', 'bug', 'não funciona', 'duvida', 'dúvida', 'pergunta'],
+                resposta: '🔧 Suporte AgendaFull:\n\n📱 WhatsApp: (11) 91969-8999\n⏰ Seg-Sáb: 8h às 20h\n⏰ Domingo: 9h às 13h\n\n✅ Suporte real e humanizado\n✅ Resposta rápida\n✅ Ajuda na instalação\n✅ Dúvidas técnicas\n✅ Planos Premium: Suporte prioritário\n\nEstamos sempre prontos para ajudar! 💜'
+            },
+            {
+                palavrasChave: ['urgente', 'urgência', 'emergencia', 'emergência', 'agora', 'rápido', 'rapido'],
+                resposta: '🚨 Precisa de ajuda urgente?\n\n📱 Chame AGORA no WhatsApp:\n(11) 91969-8999\n\n⏰ Atendimento em até 5 minutos!\n\nNossa equipe está pronta para resolver seu problema rapidamente. 💜'
+            },
+            {
+                palavrasChave: ['domingo', 'sabado', 'sábado', 'fim de semana', 'feriado'],
+                resposta: '📅 Atendimento aos fins de semana:\n\n⏰ Sábado: 8h às 20h (normal)\n⏰ Domingo: 9h às 13h (plantão)\n🎌 Feriados: Consulte no WhatsApp\n\nNosso sistema de agendamento funciona 24h todos os dias!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['whatsapp', 'zap', 'telefone', 'contato', 'número', 'numero', 'falar', 'whats', 'whats app'],
+                resposta: '📱 Fale conosco pelo WhatsApp!\n\n👉 (11) 91969-8999\n\n⏰ Horários:\nSeg-Sáb: 8h às 20h\nDomingo: 9h às 13h\n\n💬 Resposta rápida e humanizada!\n\nClique no botão verde flutuante no site ou chame direto! 💜'
+            },
+            {
+                palavrasChave: ['email', 'e-mail', 'correio', 'contato email'],
+                resposta: '📧 Nosso atendimento principal é via WhatsApp:\n\n📱 (11) 91969-8999\n\nÉ mais rápido e eficiente! 💜\n\nSe preferir, peça o email no WhatsApp que enviamos.'
+            },
+            {
+                palavrasChave: ['pagamento', 'pagar', 'boleto', 'pix', 'forma de pagamento', 'como pagar', 'cobrança', 'cobranca'],
+                resposta: '💳 Formas de Pagamento:\n\n✅ Cartão de crédito (até 12x)\n✅ Cartão de débito\n✅ Boleto bancário\n✅ PIX (aprovação na hora)\n\n📅 Cobrança mensal ou anual\n💰 Anual: 15% OFF + 1 mês grátis\n✨ 7 dias grátis sem cartão\n\n📱 Quer fechar? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['primeira mensalidade', 'quando paga', 'quando vence', 'data de cobrança', 'vencimento'],
+                resposta: '📅 Cobrança:\n\n✅ Primeira cobrança após os 7 dias grátis\n✅ Depois, todo mês na mesma data\n✅ Plano anual: cobrança única\n✅ Aviso antes de cada cobrança\n\n✨ Teste 7 dias sem compromisso!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['código', 'codigo', 'promocional', 'promoção', 'promocao', 'cupom', 'desconto'],
+                resposta: '🎁 Código Promocional!\n\nUse o código: AgendaFull10\n\n💰 Ganhe 10% OFF em qualquer plano!\n\n✅ Válido para planos mensais e anuais\n✅ Barbearia ou Salão\n✅ Basic ou Premium\n\n📱 Como resgatar:\n1. Vá no site oficial\n2. Clique em "Possui código promocional?"\n3. Digite: AgendaFull10\n\nOu chame direto: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['AgendaFull10', 'agendafull10', 'AGENDAFULL10'],
+                resposta: '🎉 CÓDIGO VÁLIDO: AgendaFull10\n\n✅ 10% de desconto confirmado!\n✅ Válido para qualquer plano\n✅ Barbearia ou Salão\n✅ Basic ou Premium\n✅ Mensal ou Anual\n\n📱 Para resgatar:\nChame no WhatsApp (11) 91969-8999 e diga que tem o código AgendaFull10!\n\nOu use o modal de código no site. 💜'
+            },
+            {
+                palavrasChave: ['outro código', 'outro cupom', 'mais desconto', 'desconto maior', 'black friday'],
+                resposta: '🎁 O código AgendaFull10 já garante 10% OFF!\n\nFique ligado nas nossas promoções sazonais:\n• Black Friday\n• Natal\n• Ano Novo\n• Dia do Barbeiro\n• Dia do Cabeleireiro\n\n📱 Salve nosso WhatsApp para não perder: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['diferencial', 'diferenciais', 'por que', 'porque', 'vantagem', 'vantagens', 'benefícios', 'beneficios'],
+                resposta: '✨ Por que escolher AgendaFull?\n\n✅ Design premium e profissional\n✅ Hospedagem gratuita inclusa\n✅ Alertas inteligentes\n✅ Investimento acessível\n✅ Entrega em até 24h\n✅ Suporte real e humanizado\n✅ Dados 100% seguros\n✅ 100% responsivo (mobile)\n✅ 7 dias grátis sem cartão\n✅ Firebase integrado\n\nTecnologia que impulsiona seu negócio! 💜\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['concorrente', 'concorrência', 'outro sistema', 'outros sistemas', 'qual a diferença'],
+                resposta: '💪 Diferenciais que nos destacam:\n\n✅ Atendimento HUMANO (não robô)\n✅ Entrega em 24h (outros levam dias)\n✅ Preço justo e transparente\n✅ Hospedagem GRÁTIS inclusa\n✅ Personalização real\n✅ Suporte que responde\n✅ 7 dias grátis sem cartão\n\nNão vendemos sistema, entregamos RESULTADO!\n\n📱 Compare: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['entrega', 'prazo', 'demora', 'quando recebo', 'tempo', 'prazo de entrega', 'instalação demora'],
+                resposta: '⏱️ Prazo de Entrega:\n\n🚀 Entrega em até 24 horas!\n\n✅ Após pagamento, configuramos tudo\n✅ Você recebe acesso ao painel\n✅ Sistema pronto para uso\n✅ Orientação completa\n\nRápido, prático e sem burocracia!\n\n📱 Quer começar? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['já quero', 'ja quero', 'quero agora', 'comprar agora', 'fechar agora', 'contratar agora'],
+                resposta: '🚀 Vamos nessa!\n\n📱 Chame AGORA no WhatsApp:\n(11) 91969-8999\n\nEscolha seu plano:\n💈 Barbearia Basic/Premium\n💇 Salão Basic/Premium\n📅 Mensal ou Anual (15% OFF)\n\nEm até 24h seu sistema estará no ar! 💜'
+            },
+            {
+                palavrasChave: ['comparar', 'comparação', 'comparacao', 'diferença', 'diferenca', 'basic vs premium', 'qual melhor'],
+                resposta: '📊 Comparativo Basic vs Premium:\n\n🔹 BASIC (R$29,90/mês):\n• 1 profissional\n• Funcionalidades essenciais\n• Suporte normal\n• Instalação R$39,90\n\n🔹 PREMIUM (R$49,90/mês):\n• Múltiplos profissionais\n• Notificações em tempo real\n• Relatórios detalhados\n• Personalização de cores\n• Suporte prioritário\n• Instalação GRÁTIS\n\n💡 Premium é ideal para equipes!\n\n📱 Dúvidas? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['tenho equipe', 'vários barbeiros', 'vários profissionais', 'equipe', 'time', 'sócio', 'socio'],
+                resposta: '👥 Para equipes, recomendamos o PREMIUM!\n\n✅ Múltiplos profissionais na mesma agenda\n✅ Cada um com seu login\n✅ Notificações individuais\n✅ Relatórios por profissional\n✅ Suporte prioritário\n✅ Instalação GRÁTIS\n\n💰 R$49,90/mês para TODA a equipe!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['sou sozinho', 'trabalho sozinho', 'apenas eu', 'só eu', 'individual', 'profissional solo'],
+                resposta: '💪 Perfeito! O Basic é ideal para você!\n\n✅ 1 profissional\n✅ Todas funcionalidades essenciais\n✅ R$29,90/mês\n✅ Instalação: R$39,90\n\nSe depois crescer, migra pro Premium!\n\n📱 Comece seu teste grátis: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['garantia', 'garantido', 'seguro', 'confiável', 'confiavel', 'confiança', 'confianca'],
+                resposta: '🛡️ Segurança e Garantia AgendaFull:\n\n✅ Dados 100% seguros (Firebase)\n✅ 7 dias de teste grátis\n✅ Sem fidelidade\n✅ Cancele quando quiser\n✅ Suporte contínuo\n✅ Atualizações constantes\n\nSeu negócio seguro e profissional!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['cancelar', 'cancelamento', 'parar', 'desativar', 'não quero mais'],
+                resposta: '😔 Lamentamos se algo não atendeu.\n\n✅ Sem multa de cancelamento\n✅ Sem fidelidade\n✅ Cancele quando quiser\n✅ Seus dados ficam salvos por 30 dias\n\nSe puder nos contar o motivo, agradecemos!\n\n📱 WhatsApp: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['reembolso', 'devolução', 'dinheiro de volta', 'estorno'],
+                resposta: '💰 Política de Reembolso:\n\n✅ 7 dias de garantia total\n✅ Se não gostar, devolvemos 100%\n✅ Sem burocracia\n\nMas temos certeza que você vai amar!\n✨ 95% dos clientes continuam após o teste.\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['migrar', 'migração', 'migracao', 'trocar', 'mudar', 'sistema atual', 'outro sistema'],
+                resposta: '🔄 Quer migrar de sistema?\n\n✅ Migração simples e rápida\n✅ Importamos seus dados\n✅ Sem perda de informações\n✅ Suporte dedicado na transição\n\nSaia do amadorismo e venha para o profissional!\n\n📱 Vamos conversar? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['planilha', 'excel', 'papel', 'caderno', 'agenda de papel', 'whatsapp agenda'],
+                resposta: '📱 Sai do papel e vem pro digital!\n\n❌ Chega de perder anotações\n❌ Chega de confundir horários\n❌ Chega de cliente esquecido\n\n✅ Agenda online 24h\n✅ Clientes agendam sozinhos\n✅ Tudo organizado\n✅ R$29,90/mês\n\n📱 Modernize: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['para quem', 'público', 'publico', 'quem usa', 'indicado', 'recomendado'],
+                resposta: '👥 AgendaFull é para:\n\n💈 Barbearias\n💇 Salões de beleza\n✂️ Cabeleireiros\n💅 Manicures\n🧔 Barbeiros\n💆 Esteticistas\n💆 Massoterapeutas\n💇 Coloristas\n\nDo profissional solo à equipe completa!\n\nPlanos a partir de R$29,90/mês\n✨ 7 dias grátis!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['sou novo', 'começando', 'comecando', 'iniciante', 'abrir negócio', 'abrir negocio', 'montar barbearia', 'montar salão'],
+                resposta: '🚀 Começando agora? Perfeito!\n\nAgendaFull é ideal para novos negócios:\n\n✅ Comece organizado desde o dia 1\n✅ Transmite profissionalismo\n✅ Clientes confiam mais\n✅ Preço acessível (R$29,90/mês)\n✅ 7 dias grátis para testar\n\nInvista no certo desde o começo!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['já tenho negócio', 'negócio antigo', 'tradicional', 'anos de mercado'],
+                resposta: '💼 Negócio estabelecido também evolui!\n\n✅ Modernize sem complicação\n✅ Migramos seus dados\n✅ Seus clientes antigos não se perdem\n✅ Imagem mais profissional\n✅ Mais agendamentos, mais receita\n\nNunca é tarde para inovar!\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['obrigado', 'obrigada', 'valeu', 'brigado', 'grato', 'gratidão', 'gratidao', 'obg', 'vlw'],
+                resposta: '😊 Por nada! É um prazer ajudar!\n\n💜 Estamos sempre à disposição.\n\n📱 Se precisar de algo mais, chame no WhatsApp: (11) 91969-8999\n\n✨ Até mais!'
+            },
+            {
+                palavrasChave: ['vocês são incríveis', 'atendimento ótimo', 'muito bom', 'excelente', 'parabéns', 'parabens', 'top', 'show'],
+                resposta: '😍 Muito obrigado pelo carinho!\n\n💜 Fazemos tudo com amor e dedicação.\n\nSe puder nos recomendar para outros profissionais, agradecemos muito!\n\n📱 Estamos sempre aqui: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['tchau', 'até mais', 'ate mais', 'bye', 'flw', 'falou', 'até logo', 'adeus'],
+                resposta: '👋 Até logo!\n\n💜 Foi um prazer conversar com você.\n\n📱 Lembrando: WhatsApp (11) 91969-8999\n✨ 7 dias grátis em qualquer plano!\n\nEstamos sempre aqui quando precisar!'
+            },
+            {
+                palavrasChave: ['não entendi', 'nao entendi', 'como assim', 'oq', 'hã', 'hein'],
+                resposta: '🤔 Vou tentar ajudar melhor!\n\nPergunte sobre:\n\n💈 Planos para Barbearia\n💇 Planos para Salão\n💰 Preços e valores\n🎁 Código promocional: AgendaFull10\n📱 WhatsApp: (11) 91969-8999\n✨ Teste grátis 7 dias\n⚙️ Funcionalidades\n\nOu me conte melhor o que precisa! 💜'
+            },
+            {
+                palavrasChave: ['ainda não entendi', 'continua sem entender', 'não resolveu', 'nao resolveu', 'outra dúvida', 'outra duvida'],
+                resposta: '💬 Vamos por outro caminho!\n\nMe conte qual tipo de negócio você tem:\n\n💈 Barbearia?\n💇 Salão de beleza?\n💅 Manicure?\n💆 Estética?\n\nE eu te mostro o plano ideal!\n\nOu prefere falar direto no WhatsApp?\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['não é isso', 'nao é isso', 'errado', 'você não entendeu', 'vc não entendeu'],
+                resposta: '😅 Desculpe se não entendi corretamente!\n\nQue tal falarmos por WhatsApp? Lá consigo entender 100% sua necessidade:\n\n📱 (11) 91969-8999\n\nOu tente explicar com outras palavras, estou aqui! 💜'
+            },
+            {
+                palavrasChave: ['?', 'quero saber', 'me fala', 'me diz', 'conta', 'explica'],
+                resposta: '💜 Claro! Pode perguntar!\n\nPosso ajudar com:\n\n💈 Planos e preços\n💇 Barbearia ou Salão\n💰 Valores e pagamentos\n🎁 Código AgendaFull10 (10% OFF)\n✨ Teste grátis 7 dias\n📱 WhatsApp: (11) 91969-8999\n\nO que gostaria de saber?'
+            },
+            {
+                palavrasChave: ['hum', 'ah', 'ok', 'certo', 'entendi', 'entendo', 'sim', 'não', 'nao', 'talvez'],
+                resposta: '😊 Estou aqui para o que precisar!\n\nSe tiver qualquer dúvida sobre:\n• Planos\n• Preços\n• Funcionalidades\n• Teste grátis\n\nÉ só perguntar!\n\n📱 Ou WhatsApp: (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['merda', 'bosta', 'lixo', 'porcaria', 'horrível', 'horrivel', 'péssimo', 'pessimo', 'ruim demais', 'não presta'],
+                resposta: '😔 Lamentamos que se sinta assim.\n\nNão é essa a experiência que queremos proporcionar.\n\nSe algo não atendeu suas expectativas, por favor, nos diga o que houve para melhorarmos.\n\n📱 WhatsApp: (11) 91969-8999\n\nRespeito é a base de tudo. 💜'
+            },
+            {
+                palavrasChave: ['foda', 'fdp', 'caralho', 'desgraça', 'desgraca', 'otário', 'otario', 'idiota', 'imbecil'],
+                resposta: '⚠️ Por favor, mantenha o respeito.\n\nEstou aqui para ajudar de forma educada e profissional.\n\nSe precisar de suporte real, estamos disponíveis no WhatsApp:\n📱 (11) 91969-8999\n\nVamos manter um diálogo produtivo? 💜'
+            },
+            {
+                palavrasChave: ['processar', 'advogado', 'justiça', 'justica', 'procon', 'reclame aqui', 'reclamei'],
+                resposta: '⚖️ Lamentamos qualquer insatisfação.\n\nLevamos todas as reclamações a sério. Por favor, entre em contato pelo WhatsApp para tratarmos seu caso com prioridade:\n\n📱 (11) 91969-8999\n\nEstamos comprometidos em resolver. 💜'
+            },
+            {
+                palavrasChave: ['golpe', 'fraude', 'enganado', 'roubo', 'ladrão', 'ladrao'],
+                resposta: '🔒 Somos uma empresa real e legítima.\n\n✅ CNPJ ativo\n✅ Centenas de clientes atendidos\n✅ Suporte real via WhatsApp\n✅ 7 dias de teste grátis sem compromisso\n\nSe tiver dúvidas sobre nossa credibilidade, ligue ou chame:\n📱 (11) 91969-8999\n\nTransparência total! 💜'
+            },
+            {
+                palavrasChave: ['teste', 'testando', 'teste 123', 'testando 123', 'teste de mensagem'],
+                resposta: '✅ Teste recebido com sucesso!\n\nO ChatAlfa da AgendaFull está funcionando perfeitamente.\n\nQuando quiser saber sobre planos, preços ou funcionalidades, é só perguntar! 💜'
+            },
+            {
+                palavrasChave: ['hehe', 'haha', 'kkk', 'rsrs', 'lol', '😂', '🤣'],
+                resposta: '😄 Que bom ver você animado!\n\nQuando quiser saber sobre nossos sistemas de agendamento, é só falar!\n\n💜 AgendaFull'
+            },
+            // ==================== DIFERENCIAÇÃO DE PLANOS ====================
+            {
+                palavrasChave: ['basic é suficiente', 'basic atende', 'basic basta', 'só preciso do basic', 'basic resolve'],
+                resposta: '💡 O Basic já resolve MUITA coisa!\n\nMas olha só a diferença de investimento:\n\n💰 Basic: R$29,90/mês + R$39,90 instalação\n💰 Premium: R$49,90/mês + Instalação GRÁTIS\n\nA diferença é só R$20/mês e você ganha:\n✅ Múltiplos profissionais\n✅ Notificações\n✅ Relatórios\n✅ Suporte prioritário\n\nPensa nisso! 😉\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['não sei qual escolher', 'indeciso', 'qual pegar', 'não sei qual plano', 'dúvida entre planos'],
+                resposta: '🤔 Vou te ajudar a decidir:\n\n💈 1 profissional só? → Basic (R$29,90)\n💈 2 ou mais? → Premium (R$49,90)\n\n🎯 Dica de ouro: Se pensa em crescer nos próximos 6 meses, já vai de Premium!\n\nA diferença de preço é pequena e você já garante:\n• Instalação GRÁTIS (economia de R$39,90)\n• Suporte prioritário\n• Todos os recursos avançados\n\n📱 Bora crescer? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['plano premium vale a pena', 'premium compensa', 'vale a pena premium', 'upgrade', 'mudar para premium'],
+                resposta: '💎 Premium vale CADA centavo!\n\nOlha só a economia real:\n\n💰 Basic: R$29,90 x 12 = R$358,80 + R$39,90 inst. = R$398,70/ano\n💰 Premium: R$49,90 x 12 = R$598,80 + Inst. GRÁTIS = R$598,80/ano\n\nDiferença: só R$200/ano (R$16,60/mês)\n\nPor R$16,60 a mais você leva:\n✅ Múltiplos profissionais\n✅ Notificações em tempo real\n✅ Relatórios de faturamento\n✅ Suporte prioritário\n✅ Personalização completa\n\nÉ investimento, não gasto! 🚀\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['sistema mais barato', 'mais em conta', 'econômico', 'barato', 'custo benefício', 'custo beneficio'],
+                resposta: '💰 Custo-benefício imbatível!\n\n✅ R$29,90/mês (menos de R$1 por dia!)\n✅ 7 dias grátis (teste sem risco)\n✅ Hospedagem inclusa (sem custo extra)\n✅ Sem taxa de manutenção\n✅ Atualizações gratuitas\n\nPensa: quanto vale cada cliente que NÃO falta porque foi lembrado automaticamente? 💭\n\n📱 Teste grátis: (11) 91969-8999'
+            },
+            // ==================== MOTIVAÇÃO DE COMPRA ====================
+            {
+                palavrasChave: ['estou pensando', 'vou pensar', 'depois eu vejo', 'mais tarde', 'qualquer coisa', 'vou ver', 'analisar'],
+                resposta: '🤔 Pensar é importante, mas o tempo voa!\n\nEnquanto você pensa, seus concorrentes podem estar:\n✅ Organizando a agenda\n✅ Fidelizando clientes\n✅ Faturando mais\n\nO teste é GRÁTIS por 7 dias, sem compromisso!\n\nNão custa nada experimentar e ver na prática como seu negócio pode melhorar.\n\n📱 Ative agora: (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['mês que vem', 'próximo mês', 'ano que vem', 'depois eu faço', 'futuro', 'qualquer dia'],
+                resposta: '⏰ Todo dia adiado é dinheiro perdido!\n\nUm cliente que não consegue agendar = receita que vai embora.\n\nCom AgendaFull:\n✅ Clientes agendam 24h (até de madrugada)\n✅ Você nunca mais perde um horário\n✅ Organização total desde o dia 1\n\n💰 R$29,90/mês é menos que 1 corte de cabelo!\n\n📱 Comece hoje: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['preciso de cliente', 'sem cliente', 'pouco cliente', 'movimento baixo', 'cade os clientes', 'cadê os clientes'],
+                resposta: '📢 O AgendaFull ajuda a ATRAIR e RETER clientes!\n\n✅ Sistema profissional = passa confiança\n✅ Agendamento fácil = cliente volta\n✅ Lembretes automáticos = menos faltas\n✅ Organização = mais vagas disponíveis\n\nClientes preferem estabelecimentos ORGANIZADOS!\n\n💰 R$29,90/mês é investimento em marketing.\n\n📱 Vamos alavancar seu negócio? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['tá caro', 'ta caro', 'caro', 'muito caro', 'sal', 'salgado', 'caríssimo', 'carissimo'],
+                resposta: '💰 Vamos colocar em perspectiva:\n\nR$29,90/mês = menos de R$1 por dia!\n\nIsso é mais barato que:\n☕ 1 café por dia\n📱 1 plano de celular\n🚗 1 lavagem de carro\n\nE o retorno? MUITO maior!\n\n1 cliente fidelizado = dezenas de reais por mês.\n10 clientes = centenas de reais.\n\nO sistema SE PAGA na primeira semana! 💜\n\n📱 Teste grátis: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['não tenho dinheiro', 'sem dinheiro', 'duro', 'quebrado', 'sem grana', 'investimento alto'],
+                resposta: '💡 Entendo perfeitamente!\n\nMas olha que interessante:\n\n✅ 7 dias GRÁTIS (sem pagar nada)\n✅ Depois, R$29,90/mês\n✅ Se não gostar, cancela sem multa\n\nOu seja: risco ZERO!\n\nTeste por 7 dias. Se trouxer mais clientes (e vai trazer), o sistema se paga sozinho.\n\n📱 Comece grátis: (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['tenho medo', 'inseguro', 'será que funciona', 'sera que funciona', 'desconfiado', 'não confio'],
+                resposta: '🔒 Segurança total!\n\n✅ 7 dias grátis (teste sem compromisso)\n✅ Cancele quando quiser\n✅ Sem letras miúdas\n✅ Suporte real (gente de verdade!)\n✅ Centenas de clientes satisfeitos\n\nNão acredita? Teste! Não gostou? Cancele!\n\nNão tem pegadinha. 💜\n\n📱 Tire suas dúvidas: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['quero o melhor', 'top de linha', 'mais completo', 'não quero básico', 'quero tudo'],
+                resposta: '👑 Então é Premium que você quer!\n\n💎 Barbearia/Salão Premium:\n✅ TUDO incluso\n✅ Múltiplos profissionais\n✅ Notificações em tempo real\n✅ Relatórios completos\n✅ Personalização total\n✅ Suporte prioritário\n✅ Instalação GRÁTIS\n\n💰 R$49,90/mês\n📅 Ou R$509/ano (15% OFF)\n\nO melhor para quem quer o MELHOR!\n\n📱 Fale conosco: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['presente', 'presentear', 'dou de presente', 'indicar amigo', 'amigo', 'colega'],
+                resposta: '🎁 Que ideia incrível presentear com organização!\n\nAgendaFull é o presente perfeito para:\n🎂 Aniversário de profissional\n🎄 Natal\n🎉 Inauguração de negócio\n🤝 Parceria\n\nPresenteie 7 dias grátis + 1 mês pago!\n\n📱 Vamos preparar essa surpresa? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['especial', 'personalizado', 'diferente', 'exclusivo', 'único', 'unico'],
+                resposta: '✨ No AgendaFull, cada negócio é único!\n\nPersonalizamos:\n🎨 Cores do sistema\n🖼️ Logo e identidade\n🔔 Sons de notificação\n📱 Layout responsivo\n\nSeu sistema com a SUA cara!\n\nO cliente percebe o profissionalismo na hora.\n\n📱 Vamos personalizar o seu? (11) 91969-8999'
+            },
+            // ==================== URGÊNCIA / ESCASSEZ ====================
+            {
+                palavrasChave: ['promoção', 'promocao', 'oferta', 'promo', 'desconto hoje', 'último dia'],
+                resposta: '🔥 Aproveite enquanto o código AgendaFull10 funciona!\n\n💰 10% OFF em qualquer plano\n⏰ Oferta por tempo limitado\n\nNão deixe pra depois - o desconto pode acabar!\n\n📱 Resgate agora: (11) 91969-8999\n\nDigite: AgendaFull10 💜'
+            },
+            {
+                palavrasChave: ['quantas vagas', 'limite', 'lotado', 'quantos clientes', 'capacidade'],
+                resposta: '♾️ AgendaFull é INFINITO!\n\n✅ Sem limite de clientes cadastrados\n✅ Sem limite de agendamentos\n✅ Sem limite de profissionais (Premium)\n✅ Sem limite de crescimento\n\nSeu negócio pode crescer à vontade que o sistema acompanha!\n\n📱 Comece agora: (11) 91969-8999'
+            },
+            // ==================== OBJEÇÕES COMUNS ====================
+            {
+                palavrasChave: ['meus clientes não usam', 'cliente não agenda online', 'cliente idoso', 'cliente antigo', 'cliente tradicional'],
+                resposta: '👴 Seus clientes usam WhatsApp? Então usam AgendaFull!\n\n✅ Interface simples (nível WhatsApp de facilidade)\n✅ Agendamento em 2 cliques\n✅ Disponível em qualquer celular\n✅ Não precisa instalar nada\n\nAté sua avó consegue agendar!\n\nO tradicional também evolui. 💜\n\n📱 Teste e veja: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['já tenho agenda', 'já uso sistema', 'outro app', 'outro programa', 'sistema antigo'],
+                resposta: '🔄 Migração SEM DOR DE CABEÇA!\n\n✅ Importamos seus dados do sistema antigo\n✅ Seus clientes não percebem a mudança\n✅ Transição suave e rápida\n✅ Suporte dedicado na migração\n\nTroque o antigo pelo INCRÍVEL!\n\n📱 Vamos migrar? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['sistema offline', 'sem internet', 'internet ruim', 'sinal ruim', 'offline'],
+                resposta: '📶 O AgendaFull é online, mas:\n\n✅ Super leve (funciona até no 3G)\n✅ Carrega rápido\n✅ Consome poucos dados\n\nE a internet hoje está em todo lugar!\n\nSeu cliente agenda do conforto da casa dele, e você visualiza de qualquer lugar.\n\n📱 Teste a velocidade: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['não sei mexer', 'sou leigo', 'não entendo tecnologia', 'analfabeto digital', 'idade', 'velho'],
+                resposta: '👴 Se você sabe usar WhatsApp, sabe usar AgendaFull!\n\n✅ Tão simples quanto mandar mensagem\n✅ Painel intuitivo (feito para humanos!)\n✅ Ensino completo na instalação\n✅ Suporte por WhatsApp (te ajudamos em TUDO)\n\nNão importa sua idade ou experiência com tecnologia.\n\n📱 Te guiamos passo a passo: (11) 91969-8999'
+            },
+            // ==================== APELO EMOCIONAL ====================
+            {
+                palavrasChave: ['cansado', 'estressado', 'sobrecarregado', 'não aguento mais', 'cheio de coisa'],
+                resposta: '😮‍💨 Cansado de se perder nos horários?\n\nRespira fundo. O AgendaFull resolve isso:\n\n✅ Tudo organizado em um só lugar\n✅ Clientes agendam sozinhos\n✅ Você só cuida do seu talento\n\nMenos estresse, mais resultado!\n\n📱 Teste 7 dias grátis: (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['sonho', 'realizar', 'crescer', 'meta', 'objetivo', 'meta de vida'],
+                resposta: '🚀 Seu negócio merece crescer!\n\nAgendaFull não é só um sistema - é a BASE para:\n✅ Profissionalizar seu atendimento\n✅ Multiplicar seus clientes\n✅ Aumentar seu faturamento\n✅ Realizar seus sonhos\n\n💰 A partir de R$29,90, seu negócio sobe de nível.\n\n📱 Realize: (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['dono', 'empreendedor', 'empresário', 'empresario', 'negócio próprio', 'negocio proprio'],
+                resposta: '👔 Empreendedor de verdade investe em ferramentas profissionais!\n\nSeu negócio merece:\n✅ Imagem premium\n✅ Processos organizados\n✅ Clientes satisfeitos\n✅ Tempo livre para estratégia\n\nAgendaFull é o upgrade que faltava!\n\n📱 Impulsione seu negócio: (11) 91969-8999'
+            },
+            // ==================== GATILHOS MENTAIS ====================
+            {
+                palavrasChave: ['quanto fatura', 'ganhar mais', 'aumentar receita', 'faturar mais', 'lucro', 'renda extra'],
+                resposta: '📈 AgendaFull = MAIS DINHEIRO no bolso!\n\nClientes que agendam online:\n✅ Faltam MENOS (lembretes automáticos)\n✅ Gastam MAIS (percebem profissionalismo)\n✅ Voltam MAIS (fidelização)\n✅ Indicam MAIS (compartilham o link)\n\n💰 1 cliente extra por mês já paga o sistema!\n\n📱 Multiplique sua receita: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['tempo', 'sem tempo', 'correria', 'ocupado', 'atarefado', 'tempo livre'],
+                resposta: '⏱️ Ganhe TEMPO (seu bem mais precioso)!\n\nCom AgendaFull:\n✅ Para de responder WhatsApp o dia todo\n✅ Fim das anotações em papel\n✅ Chega de confusão de horários\n✅ Cliente agenda sozinho\n\nTempo livre para:\n👨‍👩‍👧 Família\n🎯 Lazer\n💡 Criar estratégias\n\n📱 Liberte-se: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['profissionalismo', 'profissional', 'imagem', 'status', 'prestígio', 'prestigio'],
+                resposta: '🥇 Passe a imagem que seu negócio MERECE!\n\nCom AgendaFull:\n✅ Site de agendamento profissional\n✅ Layout premium\n✅ Link personalizado\n✅ Sem amadorismo\n\nSeus clientes vão pensar:\n"UAU, esse lugar é TOP!" 🤩\n\n📱 Eleve seu patamar: (11) 91969-8999'
+            },
+            // ==================== COMPARAÇÕES CRIATIVAS ====================
+            {
+                palavrasChave: ['netflix', 'spotify', 'assinatura', 'streaming'],
+                resposta: '🎬 Sabe a Netflix? Custa R$55/mês.\n\nO AgendaFull custa R$29,90/mês.\n\nA Netflix te diverte. O AgendaFull te dá LUCRO!\n\n💰 Enquanto você assiste série, seu sistema está trabalhando - clientes agendando 24h!\n\nQual investimento faz mais sentido? 😉\n\n📱 Comece: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['pizza', 'ifood', 'comida', 'restaurante', 'delivery'],
+                resposta: '🍕 Curiosidade: R$29,90 é o preço de 1 pizza!\n\n1 pizza = 1 refeição (some em 15 minutos)\n1 AgendaFull = 1 MÊS inteiro de organização!\n\nQual dura mais? 😉\n\nInvista no que traz retorno de verdade!\n\n📱 Peça seu sistema: (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['cerveja', 'bar', 'balada', 'festa', 'role', 'rolê', 'saída', 'saida'],
+                resposta: '🍺 R$29,90 = 2 cervejas no bar\n\n2 cervejas duram 1 hora.\nO AgendaFull dura 1 MÊS e ainda te faz GANHAR dinheiro!\n\nInvista no seu negócio, não nos gastos passageiros.\n\nSeu EU do futuro agradece! 🚀\n\n📱 Decida crescer: (11) 91969-8999'
+            },
+            // ==================== SITUAÇÕES ESPECÍFICAS ====================
+            {
+                palavrasChave: ['abri hoje', 'inaugurei', 'novo negócio', 'comecei hoje', 'primeiro dia'],
+                resposta: '🎉 Parabéns pela inauguração! Que momento especial!\n\nE nada melhor que começar ORGANIZADO desde o dia 1!\n\n✅ Primeira impressão profissional\n✅ Clientes já saem com link de agendamento\n✅ Controle total desde o início\n\nO futuro do seu negócio começa agora!\n\n📱 Vamos configurar? (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['reforma', 'reformando', 'mudança', 'mudanca', 'novo espaço', 'novo endereço'],
+                resposta: '🔨 Reforma é o momento PERFEITO para modernizar!\n\nNovo espaço + sistema novo = NEGÓCIO NOVO!\n\nAproveite a reforma para:\n✅ Implementar agendamento online\n✅ Treinar a equipe\n✅ Já divulgar o link novo\n\n📱 Renove tudo: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['voltei', 'retornando', 'reabrindo', 'reabertura', 'pausa', 'férias', 'ferias'],
+                resposta: '🔄 Bem-vindo de volta! Retorno em grande estilo!\n\nNada como reabrir com:\n✅ Sistema novo\n✅ Clientes organizados\n✅ Agenda impecável\n\nRecomece com o pé direito!\n\n📱 Vamos reabrir com tudo? (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['vários negócios', 'mais de um', 'duas barbearias', 'franquia', 'filial', 'filiais'],
+                resposta: '🏢 Múltiplas unidades? Temos solução!\n\n✅ Sistema para cada unidade\n✅ Relatórios consolidados\n✅ Gestão centralizada\n✅ Preço especial para múltiplas unidades\n\nGerencie seu império com profissionalismo!\n\n📱 Vamos conversar: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['sou mulher', 'empreendedora', 'dona de salão', 'empresária', 'empresaria'],
+                resposta: '👩‍💼 Mulher empreendedora, o AgendaFull te entende!\n\n✅ Sistema intuitivo e elegante\n✅ Suporte humanizado (sem tecniquês)\n✅ Design que combina com seu salão\n✅ Preço justo e transparente\n\nFeito para mulheres que transformam o mercado da beleza! 💅✨\n\n📱 Empreenda com poder: (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['presente para mim', 'me presentear', 'autopresente', 'investir em mim'],
+                resposta: '🎁 Investir em você é o MELHOR presente!\n\nAgendaFull é:\n✅ Mais organização\n✅ Menos estresse\n✅ Mais clientes\n✅ Mais dinheiro\n✅ Mais tempo livre\n\nVocê MERECE um negócio que funcione sozinho!\n\n📱 Se dê esse presente: (11) 91969-8999 💜'
+            },
+            // ==================== CURIOSIDADES ====================
+            {
+                palavrasChave: ['quem é você', 'quem é vc', 'você é robô', 'robo', 'bot', 'ia', 'inteligência artificial'],
+                resposta: '🤖 Sou o assistente virtual da AgendaFull!\n\nFui programado para responder dúvidas sobre nossos sistemas de agendamento.\n\nMas se preferir falar com humanos (recomendo!), chame no WhatsApp:\n📱 (11) 91969-8999\n\n💜 Estamos aqui 24h!'
+            },
+            {
+                palavrasChave: ['piada', 'conta uma piada', 'engraçado', 'divertido'],
+                resposta: '😄 Haha, adoro um bom humor!\n\nMas vou deixar as piadas para os barbeiros - eles são os melhores nisso! 💈\n\nFalando nisso, quer saber sobre o sistema AgendaFull para barbearia?\n\n📱 (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['clima', 'tempo', 'chuva', 'sol', 'calor', 'frio'],
+                resposta: '🌤️ O clima pode mudar, mas o AgendaFull está sempre online!\n\n24h por dia, faça chuva ou faça sol, seus clientes podem agendar!\n\n📱 Quer saber mais? (11) 91969-8999 💜'
+            },
+            {
+                palavrasChave: ['indicação', 'indicacao', 'indicar', 'afiliado', 'parceria', 'revender'],
+                resposta: '🤝 Adoramos parcerias!\n\nSe você indica o AgendaFull para outros profissionais, podemos conversar sobre comissões.\n\n📱 Chame no WhatsApp para alinharmos:\n(11) 91969-8999\n\nBora crescer juntos! 💜'
+            },
+            {
+                palavrasChave: ['atualização', 'atualizacao', 'update', 'versão nova', 'versao nova', 'novidade'],
+                resposta: '🔄 Estamos sempre evoluindo!\n\n✅ Atualizações constantes\n✅ Novas funcionalidades\n✅ Melhorias de desempenho\n✅ Correções rápidas\n\nTudo incluso no seu plano, sem custo extra!\n\n📱 Sugestões? (11) 91969-8999'
+            },
+            {
+                palavrasChave: ['default_fallback_final_que_nunca_aciona_diretamente'],
+                resposta: '💜 Obrigado pelo contato!\n\nSou o assistente virtual da AgendaFull e posso ajudar com:\n\n💈 Planos Barbearia (Basic/Premium)\n💇 Planos Salão (Basic/Premium)\n💰 Preços a partir de R$29,90/mês\n🎁 Código AgendaFull10 (10% OFF)\n✨ 7 dias grátis sem cartão\n📱 WhatsApp: (11) 91969-8999\n\nMe conte mais sobre o que precisa!'
+            }
+        ];
+
+        const CONFIG = {
+            tempoDigitacao: 2,
+            mensagemBoasVindas: 'Olá! 👋 Bem-vindo ao ChatAlfa da AgendaFull!\n\nSou o assistente virtual e posso ajudar com:\n\n💈 Barbearias e Salões\n💰 Planos a partir de R$29,90/mês\n🎁 Código AgendaFull10 (10% OFF)\n✨ 7 dias grátis sem cartão\n📱 WhatsApp: (11) 91969-8999\n\nComo posso ajudar?',
+            mensagemSemResposta: '💜 Obrigado pelo contato!\n\nSou o assistente virtual da AgendaFull. Me conte melhor o que precisa:\n\n• Qual tipo de negócio? (Barbearia/Salão)\n• Quantos profissionais?\n• Prefere plano mensal ou anual?\n\nOu chame direto no WhatsApp:\n📱 (11) 91969-8999'
+        };
+
+        function openChat() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('chatContainer').classList.add('active');
+            setTimeout(() => { enviarMensagemBot(CONFIG.mensagemBoasVindas); }, 500);
+        }
+
+        function goBack() {
+            document.getElementById('chatContainer').classList.remove('active');
+            document.getElementById('welcomeScreen').style.display = 'block';
+            document.getElementById('chatMessages').innerHTML = '<div class="system-message">💜 Conversa iniciada</div>';
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const mensagem = input.value.trim();
+            if (!mensagem) return;
+            mostrarMensagem(mensagem, 'user', 'Você');
+            input.value = '';
+            setTimeout(() => {
+                const resposta = buscarResposta(mensagem);
+                mostrarDigitacao();
+                setTimeout(() => { esconderDigitacao(); enviarMensagemBot(resposta); }, CONFIG.tempoDigitacao * 1000);
+            }, 500);
+        }
+
+        function buscarResposta(mensagem) {
+            const textoMinusculo = mensagem.toLowerCase();
+            for (const config of RESPOSTAS_AUTOMATICAS) {
+                const encontrou = config.palavrasChave.some(palavra => textoMinusculo.includes(palavra.toLowerCase()));
+                if (encontrou) return config.resposta;
+            }
+            return CONFIG.mensagemSemResposta;
+        }
+
+        function enviarMensagemBot(texto) { mostrarMensagem(texto, 'support', 'AgendaFull'); }
+
+        function mostrarMensagem(texto, remetente, nome) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'message ' + (remetente === 'user' ? 'user' : 'support');
+            const hora = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            div.innerHTML = `<div class="message-bubble">${texto.replace(/\n/g, '<br>')}</div><div class="message-time">${nome} • ${hora}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function mostrarDigitacao() { document.getElementById('typingIndicator')?.classList.add('active'); }
+        function esconderDigitacao() { document.getElementById('typingIndicator')?.classList.remove('active'); }
+
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && document.activeElement === document.getElementById('messageInput')) sendMessage();
+        });
+    </script>
+</body>
+</html>
